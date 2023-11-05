@@ -242,7 +242,7 @@ const permissionsByEntity = ref(permissionsByEntityFormated())
           <tr>
             <th id="fixed-cell">
               <div class="min-w">
-                Role
+                Roles
               </div>
             </th>
             <template v-for="entity in permissionsByEntity" :key="entity[0][0]">
