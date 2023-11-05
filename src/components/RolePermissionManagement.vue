@@ -84,6 +84,9 @@ const deletePermissionsByEntity = entity => {
       }
     }
   })
+  roles.forEach((role) => {
+    role.permissions = role.permissions.filter((permission) => permission.split(':')[0] !== entity);
+  });
 }
 
 const deletePermission = (entity, permissionToRemove) => {
@@ -99,6 +102,9 @@ const deletePermission = (entity, permissionToRemove) => {
       permissionsByEntity.value.push(removedEntity[0]);
     }
   }
+  roles.forEach((role) => {
+    role.permissions = role.permissions.filter((permission) => permission !== `${entity}:${permissionToRemove}`);
+  });
 }
 
 const filterPermissions = (element) => {  // element=0 -> entidades, element=1 -> permisos
