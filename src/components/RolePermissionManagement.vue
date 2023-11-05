@@ -218,7 +218,7 @@ const permissionsByEntity = ref(permissionsByEntityFormated())
 <template>
   <div class="container">
     <div class="table-wrapper">
-      <table>
+      <table border>
         <!-- ENTITIES ROW -->
         <thead>
           <tr>
@@ -303,10 +303,21 @@ const permissionsByEntity = ref(permissionsByEntityFormated())
 <style scoped>
 dialog {
   position: absolute;
-  top: 50%;
+  top: 40%;
   margin: 0 auto;
-  width: 200px;
-  height: 100px;
+  width: 300px;
+  height: 170px;
+  padding: 10px;
+}
+
+dialog button {
+  width: 50px;
+  height: 50px;
+}
+
+dialog input {
+  width: 100%;
+  height: 40px;
 }
 
 .container {
@@ -321,6 +332,7 @@ dialog {
   z-index: 5;
   width: 40px;
   height: 100%;
+  cursor: pointer;
 }
 
 .table-wrapper {
@@ -331,6 +343,7 @@ dialog {
 }
 
 table {
+  /* border: 1px solid #553089; */
   width: 100%;
   border-collapse: collapse;
 }
@@ -341,7 +354,7 @@ th {
 }
 
 td.mark {
-  border: 1px solid #553089;
+  /* border: 1px solid #553089; */
 }
 
 input.add-role {
