@@ -10,7 +10,6 @@ const roles = reactive(props.roles)
 const checkboxStates = reactive({})
 const hover = ref(null)
 const newRoleName = ref('')
-const showModal = ref(false)
 const newPermission = ref('')
 const newPermissionIsCorrect = ref(false)
 const modal = ref(null)
@@ -36,18 +35,23 @@ const toggleCheckboxPermission = cell => {
 
 const setPermissionsByRole = (role) => {
   role.permissions = []
-  return checkboxStates[role.id] ? role.permissions = props.permissions : role.permissions
+  if (checkboxStates[role.id]) {
+    permissionsByEntity.value.forEach(entity => {
+      entity[1].forEach(permission => role.permissions.push(`${entity[0][0]}:${permission}`))
+    })
+  }
 }
 
 const setPermissionsByEntity = (entity) => {
   roles.forEach(role => {
     role.permissions = role.permissions.filter(perm => !perm.includes(entity))
   });
+  const permissionsEntity = permissionsByEntity.value.filter(ent => ent[0][0] === entity)
   if (checkboxStates[entity]) {
     roles.forEach(role => {
-      permissions.forEach(permission => {
+      permissionsEntity[0][1].forEach(permission => {
         role.permissions.push(`${entity}:${permission}`)
-      })
+      });
     })
   }
 }
@@ -58,9 +62,7 @@ const setPermissionsByPermission = (handlePermission) => {
   });
   if (checkboxStates[handlePermission]) {
     roles.forEach(role => {
-      permissions.forEach(permission => {
-        role.permissions.push(handlePermission)
-      })
+      role.permissions.push(handlePermission)
     })
   }
 }
@@ -116,7 +118,6 @@ const filterPermissions = (element) => {  // element=0 -> entidades, element=1 -
 const havePermission = (permissionsRole, entityPermission) => permissionsRole.includes(entityPermission) ? '✖️' : ''
 
 const entities = ref(filterPermissions(0))
-const permissions = filterPermissions(1)
 
 const permissionsByEntityFormated = () => {
   const result = {};
@@ -160,14 +161,6 @@ const modifyText = text => {
   return firstWord;
 }
 
-const addReadPermission = () => {
-  const readPermission = []
-  entities.value.forEach(entity => {
-    readPermission.push(`${entity}:READ`)
-  });
-  return readPermission
-}
-
 const addRole = () => {
   roles.push({
     id: Date.now().toString(),
@@ -175,6 +168,19 @@ const addRole = () => {
     permissions: addReadPermission()
   })
   newRoleName.value = ''
+}
+
+const addReadPermission = () => {
+  const readPermission = []
+  const regex = /(^|[:_])READ($|[:_])/;
+  permissionsByEntity.value.forEach(entity => {
+    entity[1].forEach(permission => {
+      if (regex.test(`${entity[0][0]}:${permission}`)) {
+        readPermission.push(`${entity[0][0]}:${permission}`)
+      }
+    })
+  })
+  return readPermission
 }
 
 const addPermission = () => {
@@ -211,16 +217,20 @@ const closeModal = () => {
   newPermissionIsCorrect.value = false
 }
 
-const permissionsByEntity = ref(permissionsByEntityFormated())
+const returnRolesUpdated = () => {
+  console.log(roles);
+}
 
+const permissionsByEntity = ref(permissionsByEntityFormated())
+const showModal = () => modal.value.showModal()
 </script>
 
 <template>
   <div class="container">
     <div class="table-wrapper">
-      <table border>
-        <!-- ENTITIES ROW -->
+      <table>
         <thead>
+          <!-- ENTITIES ROW -->
           <tr>
             <th id="cell-invisible">
               <div class="min-w"></div>
@@ -237,6 +247,7 @@ const permissionsByEntity = ref(permissionsByEntityFormated())
               </div>
             </th>
           </tr>
+          <!-- ENTITIES ROW -->
 
           <!-- PERMISSIONS ROW -->
           <tr>
@@ -260,6 +271,8 @@ const permissionsByEntity = ref(permissionsByEntityFormated())
               </th>
             </template>
           </tr>
+          <!-- PERMISSIONS ROW -->
+
         </thead>
 
         <tbody>
@@ -284,40 +297,168 @@ const permissionsByEntity = ref(permissionsByEntityFormated())
                 </td>
               </template>
             </template>
+            <!-- X CELL -->
+
           </tr>
+          <!-- ROLES ROW -->
+
         </tbody>
       </table>
 
     </div>
-    <input class="add-role" type="text" placeholder="+ Add Role" v-model="newRoleName" @keyup.enter="addRole">
-    <div class="add-permission" @click="showModal = true"></div>
+    <!-- INPUT ADD ROLE -->
+    <div class="add-role-wrapper">
+      <input class="add-role" type="text" placeholder="+ Add Role" v-model="newRoleName" @keyup.enter="addRole">
+      <button @click="addRole">+</button>
+    </div>
+    <!-- INPUT ADD ROLE -->
+
+    <!-- BUTTON ADD PERMISSION -->
+    <div class="add-permission" @click="showModal">+ Add Permission</div>
+    <!-- BUTTON ADD PERMISSION -->
+
+    <!-- BUTTON SAVE -->
+    <button class="btn-save" @click="returnRolesUpdated">Save</button>
+    <!-- BUTTON SAVE -->
   </div>
 
-  <dialog :open="showModal" ref="modal">
-    <button @click="closeModal">X</button>
-    <input type="text" v-model="newPermission" @input="validateNewPermission">
-    <button @click="addPermission" :disabled="!newPermissionIsCorrect">Ok</button>
+  <!-- MODAL -->
+  <dialog ref="modal">
+    <button class="btn-close-modal" @click="closeModal">✖️</button>
+    <div>
+      <input placeholder="New Permission" type="text" v-model="newPermission" @input="validateNewPermission">
+      <button :style="{ cursor: !newPermissionIsCorrect ? 'not-allowed' : 'pointer' }" class="btn-ok"
+        @click="addPermission" :disabled="!newPermissionIsCorrect">Ok</button>
+    </div>
   </dialog>
+  <!-- MODAL -->
 </template>
 
 <style scoped>
-dialog {
+.add-role-wrapper{
+  position: relative;
+  display: flex;
+  place-items: center;
+}
+.add-role-wrapper button{
   position: absolute;
-  top: 40%;
-  margin: 0 auto;
-  width: 300px;
-  height: 170px;
-  padding: 10px;
+  right: 7px;
+  background-color: #4f2d80;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 5px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.add-role-wrapper button:active{
+  transform: scale(90%);
 }
 
-dialog button {
-  width: 50px;
-  height: 50px;
+tr:nth-child(even) {
+  background-color: #351c5849;
+}
+
+tr:hover {
+  background: transparent linear-gradient(171deg, #4f2d80, #351c58) 0 0 no-repeat;
+}
+
+dialog div {
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  gap: 15px;
+  padding: 10px 20px;
+  justify-content: center;
+  height: inherit;
+}
+
+.btn-close-modal {
+  background-color: transparent;
+  border: none;
+  filter: brightness(100);
+  z-index: 5;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 15px;
+  height: 15px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: transform .2s;
+}
+
+.btn-close-modal:hover {
+  transform: scale(120%);
+}
+
+.btn-save {
+  position: absolute;
+  bottom: -60px;
+  right: 0;
+  padding: 10px 30px;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  text-transform: uppercase;
+  font-weight: bold;
+  transition: all .2s;
+  background: transparent linear-gradient(171deg, #4f2d80, #351c58) 0 0 no-repeat;
+}
+
+.btn-save:hover {
+  box-shadow: 0 0 10px -1px #553089;
+}
+
+.btn-save:active {
+  transform: scale(90%);
+}
+
+dialog::backdrop {
+  background-color: #000000bf;
+  backdrop-filter: blur(4px);
+}
+
+dialog {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 350px;
+  height: 150px;
+  border-radius: 5px;
+  border: 0;
+  z-index: 10;
+  background: transparent linear-gradient(171deg, #4f2d80, #351c58) 0 0 no-repeat;
+}
+
+
+dialog button.btn-ok {
+  text-transform: uppercase;
+  padding: 5px 15px;
+  color: #4f2d80;
+  font-weight: bold;
+  border-radius: 5px;
+  border: none;
+  transition: all .2s;
+  background: transparent linear-gradient(171deg, white, rgb(181, 181, 181)) 0 0 no-repeat;
 }
 
 dialog input {
   width: 100%;
   height: 40px;
+  background-color: #242424;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 15px;
+  color: white;
+}
+
+dialog input:focus {
+  outline: none;
 }
 
 .container {
@@ -333,6 +474,11 @@ dialog input {
   width: 40px;
   height: 100%;
   cursor: pointer;
+  writing-mode: vertical-lr;
+  transform: rotate(360deg);
+  white-space: nowrap;
+  line-height: 2.5;
+  border-radius: 5px;
 }
 
 .table-wrapper {
@@ -343,7 +489,6 @@ dialog input {
 }
 
 table {
-  /* border: 1px solid #553089; */
   width: 100%;
   border-collapse: collapse;
 }
@@ -354,7 +499,7 @@ th {
 }
 
 td.mark {
-  /* border: 1px solid #553089; */
+  /* border: 1px solid white; */
 }
 
 input.add-role {
@@ -367,13 +512,17 @@ input.add-role {
   border: 1px solid white;
   outline: none;
   color: white;
-  text-shadow: 0 0 1px white;
-  padding: 10px;
+  padding: 10px 40px;
   font-size: 16px;
+  border-radius: 5px;
+}
+
+input::placeholder {
+  color: white;
 }
 
 th {
-  background-color: #553089;
+  background: transparent linear-gradient(171deg, #4f2d80, #351c58) 0 0 no-repeat;
 }
 
 img {
@@ -390,7 +539,7 @@ input[type=checkbox] {
 
 #cell-invisible {
   border: none;
-  background-color: #242424;
+  background: #242424;
   position: sticky;
   top: 0;
   left: 0;
@@ -405,7 +554,7 @@ input[type=checkbox] {
 }
 
 .role-col {
-  background-color: #553089;
+  background-color: #231339;
   position: sticky;
   left: 0;
   z-index: 1;

@@ -16,7 +16,6 @@ body {
   min-width: 320px;
   min-height: 100vh;
   color: white;
-  text-shadow: 0 0 2px white;
 }
 
 #app {
@@ -30,8 +29,8 @@ body {
 }
 
 *::-webkit-scrollbar:vertical {
-  width: 8px;
-  background-color: #553089;
+  width: 10px;
+  background-color: #242424;
 }
 
 *::-webkit-scrollbar-button:increment,
@@ -40,8 +39,8 @@ body {
 }
 
 *::-webkit-scrollbar:horizontal {
-  height: 8px;
-  background-color: #553089;
+  height: 10px;
+  background-color: #242424;
 }
 
 *::-webkit-scrollbar-thumb {
