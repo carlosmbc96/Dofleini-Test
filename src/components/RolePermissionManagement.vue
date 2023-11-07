@@ -36,7 +36,7 @@ const toggleCheckboxPermission = cell => {
 const setPermissionsByRole = (role) => {
   role.permissions = []
   if (checkboxStates[role.id]) {
-    permissionsByEntity.value.forEach(entity => {
+    permissionsByEntity.forEach(entity => {
       entity[1].forEach(permission => role.permissions.push(`${entity[0][0]}:${permission}`))
     })
   }
@@ -44,9 +44,9 @@ const setPermissionsByRole = (role) => {
 
 const setPermissionsByEntity = (entity) => {
   roles.forEach(role => {
-    role.permissions = role.permissions.filter(perm => !perm.includes(entity))
+    role.permissions = role.permissions.filter(perm => perm.split(':')[0] !== entity)
   });
-  const permissionsEntity = permissionsByEntity.value.filter(ent => ent[0][0] === entity)
+  const permissionsEntity = permissionsByEntity.filter(ent => ent[0][0] === entity)
   if (checkboxStates[entity]) {
     roles.forEach(role => {
       permissionsEntity[0][1].forEach(permission => {
@@ -76,13 +76,13 @@ const deleteRole = idToDelete => {
 }
 
 const deletePermissionsByEntity = entity => {
-  permissionsByEntity.value.forEach(el => {
+  permissionsByEntity.forEach(el => {
     if (el[0][0] === entity) {
       el[1] = []
-      const indexEntity = permissionsByEntity.value.findIndex(ent => ent[0][0] === entity);
+      const indexEntity = permissionsByEntity.findIndex(ent => ent[0][0] === entity);
       if (indexEntity !== -1) {
-        const removedEntity = permissionsByEntity.value.splice(indexEntity, 1);
-        permissionsByEntity.value.push(removedEntity[0]);
+        const removedEntity = permissionsByEntity.splice(indexEntity, 1);
+        permissionsByEntity.push(removedEntity[0]);
       }
     }
   })
@@ -92,16 +92,16 @@ const deletePermissionsByEntity = entity => {
 }
 
 const deletePermission = (entity, permissionToRemove) => {
-  const entityFiltered = permissionsByEntity.value.filter(ent => ent[0].includes(entity))
+  const entityFiltered = permissionsByEntity.filter(ent => ent[0].includes(entity))
   const permissionIndexToDelete = entityFiltered[0][1].findIndex((perm) => perm === permissionToRemove);
   if (permissionIndexToDelete !== -1) {
     entityFiltered[0][1].splice(permissionIndexToDelete, 1);
   }
   if (entityFiltered[0][1].length === 0) {
-    const indexEntity = permissionsByEntity.value.findIndex(ent => ent[0][0] === entity);
+    const indexEntity = permissionsByEntity.findIndex(ent => ent[0][0] === entity);
     if (indexEntity !== -1) {
-      const removedEntity = permissionsByEntity.value.splice(indexEntity, 1);
-      permissionsByEntity.value.push(removedEntity[0]);
+      const removedEntity = permissionsByEntity.splice(indexEntity, 1);
+      permissionsByEntity.push(removedEntity[0]);
     }
   }
   roles.forEach((role) => {
@@ -117,7 +117,7 @@ const filterPermissions = (element) => {  // element=0 -> entidades, element=1 -
 
 const havePermission = (permissionsRole, entityPermission) => permissionsRole.includes(entityPermission) ? '✖️' : ''
 
-const entities = ref(filterPermissions(0))
+const entities = reactive(filterPermissions(0))
 
 const permissionsByEntityFormated = () => {
   const result = {};
@@ -162,18 +162,32 @@ const modifyText = text => {
 }
 
 const addRole = () => {
-  roles.push({
-    id: Date.now().toString(),
-    name: newRoleName.value,
-    permissions: addReadPermission()
-  })
-  newRoleName.value = ''
+  if (validateNewRole()) {
+    roles.push({
+      id: Date.now().toString(),
+      name: newRoleName.value.trim(),
+      permissions: addReadPermission()
+    })
+    newRoleName.value = ''
+
+  }
+}
+
+const validateNewRole = () => {
+  let validated = false
+  const newRoleNameWithoutSpace = newRoleName.value.trim()
+  if (roles.every(role => role.name !== newRoleNameWithoutSpace)) {
+    if (/^[a-zA-Z ]+$/.test(newRoleNameWithoutSpace) && newRoleNameWithoutSpace.length < 20) {
+      validated = true
+    }
+  }
+  return validated
 }
 
 const addReadPermission = () => {
   const readPermission = []
   const regex = /(^|[:_])READ($|[:_])/;
-  permissionsByEntity.value.forEach(entity => {
+  permissionsByEntity.forEach(entity => {
     entity[1].forEach(permission => {
       if (regex.test(`${entity[0][0]}:${permission}`)) {
         readPermission.push(`${entity[0][0]}:${permission}`)
@@ -186,24 +200,24 @@ const addReadPermission = () => {
 const addPermission = () => {
   const entity = newPermission.value.split(':')[0]
   const newPerm = newPermission.value.split(':')[1]
-  if (entities.value.includes(entity)) {
-    permissionsByEntity.value.forEach(ent => {
-      if (ent[0][0] === entity) { //hacer que cuando encuentre la entidad pare de buscar
+  if (entities.includes(entity)) {
+    permissionsByEntity.forEach(ent => {
+      if (ent[0][0] === entity) {
         if (!ent[1].includes(newPerm)) {
           ent[1].push(newPerm)
         }
       }
     })
   } else {
-    entities.value.push(entity)
-    permissionsByEntity.value.push([[entity], [newPerm]])
+    entities.push(entity)
+    permissionsByEntity.push([[entity], [newPerm]])
   }
   closeModal()
 }
 
 const validateNewPermission = () => {
   const regex = /^[A-Z]+(_[A-Z]+)?:[A-Z]+(_[A-Z]+)?$/;
-  if (regex.test(newPermission.value)) {
+  if (regex.test(newPermission.value) && newPermission.value.length < 30) {
     newPermissionIsCorrect.value = true;
   } else {
     newPermissionIsCorrect.value = false;
@@ -221,7 +235,13 @@ const returnRolesUpdated = () => {
   console.log(roles);
 }
 
-const permissionsByEntity = ref(permissionsByEntityFormated())
+const entityHavePermissions = entity => {
+  const entityFound = permissionsByEntity.find(ent => ent[0][0] === entity)
+  hover.value = entityFound[1].length !== 0 ? entity : null
+}
+
+const permissionsByEntity = reactive(permissionsByEntityFormated())
+
 const showModal = () => modal.value.showModal()
 </script>
 
@@ -233,17 +253,21 @@ const showModal = () => modal.value.showModal()
           <!-- ENTITIES ROW -->
           <tr>
             <th id="cell-invisible">
-              <div class="min-w"></div>
+              <div class="size-cell"></div>
             </th>
-            <th class="entity-head" :colspan="entity[1].length" v-for="entity in permissionsByEntity" :key="entity[0][0]"
-              @mouseover="setHover(entity[0][0])" @mouseleave="setHover(null)">
-              <div class="min-w">
-                <span v-if="hover !== entity[0][0]">{{ modifyText(entity[0][0]) }}</span>
-                <template v-else>
-                  <input type="checkbox" :name="entity[0][0]" :id="entity[0][0]" v-model="checkboxStates[entity[0][0]]"
-                    @click="toggleCheckboxEntity(entity[0][0])">
-                  <img src="/trash_icon.svg" @click="deletePermissionsByEntity(entity[0][0])" />
-                </template>
+            <th :title="modifyText(entity[0][0])" class="entity-head" :colspan="entity[1].length"
+              v-for="entity in permissionsByEntity" :key="entity[0][0]" @mouseover="entityHavePermissions(entity[0][0])"
+              @mouseleave="setHover(null)">
+              <div class="size-cell-container">
+                <div class="size-cell">
+                  <span v-if="hover !== entity[0][0]">{{ modifyText(entity[0][0]) }}</span>
+                  <template v-else>
+                    <input type="checkbox" :name="entity[0][0]" :id="entity[0][0]" v-model="checkboxStates[entity[0][0]]"
+                      @click="toggleCheckboxEntity(entity[0][0])">
+                    <label :for="entity[0][0]"></label>
+                    <img src="/trash.svg" @click="deletePermissionsByEntity(entity[0][0])" />
+                  </template>
+                </div>
               </div>
             </th>
           </tr>
@@ -252,23 +276,28 @@ const showModal = () => modal.value.showModal()
           <!-- PERMISSIONS ROW -->
           <tr>
             <th id="fixed-cell">
-              <div class="min-w">
+              <div class="size-cell">
                 Roles
               </div>
             </th>
             <template v-for="entity in permissionsByEntity" :key="entity[0][0]">
-              <th class="permission-head" v-for="permission in entity[1]" :key="permission"
-                @mouseover="setHover(`${entity[0][0]}:${permission}`)" @mouseleave="setHover(null)">
-                <div class="min-w">
-                  <span v-if="hover !== `${entity[0][0]}:${permission}`">{{ modifyText(permission) }}</span>
-                  <template v-else>
-                    <input type="checkbox" :name="`${entity[0][0]}:${permission}`" :id="`${entity[0][0]}:${permission}`"
-                      v-model="checkboxStates[`${entity[0][0]}:${permission}`]"
-                      @click="toggleCheckboxPermission(`${entity[0][0]}:${permission}`)">
-                    <img src="/trash_icon.svg" @click="deletePermission(entity[0][0], permission)" />
-                  </template>
-                </div>
-              </th>
+              <template v-if="entity[1].length !== 0">
+                <th :title="modifyText(permission)" class="permission-head" v-for="permission in entity[1]"
+                  :key="permission" @mouseover="setHover(`${entity[0][0]}:${permission}`)" @mouseleave="setHover(null)">
+                  <div class="size-cell">
+                    <span v-if="hover !== `${entity[0][0]}:${permission}`">{{ modifyText(permission) }}</span>
+                    <template v-else>
+                      <input type="checkbox" :name="`${entity[0][0]}:${permission}`" :id="`${entity[0][0]}:${permission}`"
+                        v-model="checkboxStates[`${entity[0][0]}:${permission}`]"
+                        @click="toggleCheckboxPermission(`${entity[0][0]}:${permission}`)">
+                      <label :for="`${entity[0][0]}:${permission}`"></label>
+                      <img src="/trash.svg" @click="deletePermission(entity[0][0], permission)" />
+                    </template>
+                  </div>
+                </th>
+              </template>
+              <th v-else id="empty-entity"></th>
+
             </template>
           </tr>
           <!-- PERMISSIONS ROW -->
@@ -278,24 +307,28 @@ const showModal = () => modal.value.showModal()
         <tbody>
           <!-- ROLES ROW -->
           <tr v-for="role in roles" :key="role.id">
-            <td class="role-col" @mouseover="setHover(role.id)" @mouseleave="setHover(null)">
-              <div class="min-w">
+            <td :title="role.name" class="role-col" @mouseover="setHover(role.id)" @mouseleave="setHover(null)">
+              <div class="size-cell">
                 <span v-if="hover !== role.id">{{ role.name }}</span>
                 <template v-else>
                   <input style="width: fit-content;" type="checkbox" :name="role.name" :id="role.id"
                     v-model="checkboxStates[role.id]" @click="toggleCheckboxRole(role)">
-                  <img src="/trash_icon.svg" @click="deleteRole(role.id)" />
+                  <label :for="role.id"></label>
+                  <img src="/trash.svg" @click="deleteRole(role.id)" />
                 </template>
               </div>
             </td>
 
             <!-- X CELL -->
             <template v-for="entity in permissionsByEntity" :key="entity[0][0]">
-              <template v-for="permission in entity[1]" :key="permission">
+              <template v-if="entity[1].length !== 0">
+                <template v-for="permission in entity[1]" :key="permission">
                 <td class="mark">
                   {{ havePermission(role.permissions, `${entity[0][0]}:${permission}`) }}
                 </td>
               </template>
+              </template>
+              <td v-else></td>
             </template>
             <!-- X CELL -->
 
@@ -309,7 +342,8 @@ const showModal = () => modal.value.showModal()
     <!-- INPUT ADD ROLE -->
     <div class="add-role-wrapper">
       <input class="add-role" type="text" placeholder="+ Add Role" v-model="newRoleName" @keyup.enter="addRole">
-      <button @click="addRole">+</button>
+      <button @click="addRole" :style="{ cursor: !validateNewRole() ? 'not-allowed' : 'pointer' }"
+        :disabled="!validateNewRole()">+</button>
     </div>
     <!-- INPUT ADD ROLE -->
 
@@ -326,7 +360,7 @@ const showModal = () => modal.value.showModal()
   <dialog ref="modal">
     <button class="btn-close-modal" @click="closeModal">✖️</button>
     <div>
-      <input placeholder="New Permission" type="text" v-model="newPermission" @input="validateNewPermission">
+      <input placeholder="ENTITY:ACTION" type="text" v-model="newPermission" @input="validateNewPermission">
       <button :style="{ cursor: !newPermissionIsCorrect ? 'not-allowed' : 'pointer' }" class="btn-ok"
         @click="addPermission" :disabled="!newPermissionIsCorrect">Ok</button>
     </div>
@@ -335,12 +369,15 @@ const showModal = () => modal.value.showModal()
 </template>
 
 <style scoped>
-.add-role-wrapper{
+
+.add-role-wrapper {
   position: relative;
   display: flex;
-  place-items: center;
+  align-items: center;
+  margin-right: 40px;
 }
-.add-role-wrapper button{
+
+.add-role-wrapper button {
   position: absolute;
   right: 7px;
   background-color: #4f2d80;
@@ -352,8 +389,13 @@ const showModal = () => modal.value.showModal()
   cursor: pointer;
   transition: all .2s;
 }
-.add-role-wrapper button:active{
+
+.add-role-wrapper button:active {
   transform: scale(90%);
+}
+
+.add-role-wrapper button[disabled] {
+  filter: opacity(.3);
 }
 
 tr:nth-child(even) {
@@ -388,6 +430,7 @@ dialog div {
   height: 15px;
   font-size: 10px;
   cursor: pointer;
+  outline: none;
   transition: transform .2s;
 }
 
@@ -447,6 +490,10 @@ dialog button.btn-ok {
   background: transparent linear-gradient(171deg, white, rgb(181, 181, 181)) 0 0 no-repeat;
 }
 
+dialog button.btn-ok[disabled] {
+  filter: opacity(.3);
+}
+
 dialog input {
   width: 100%;
   height: 40px;
@@ -463,13 +510,15 @@ dialog input:focus {
 
 .container {
   position: relative;
+  min-width: 300px;
+  width: 1200px;
 }
 
 .add-permission {
   border: 1px solid white;
   position: absolute;
   top: 0;
-  right: -40px;
+  right: 0;
   z-index: 5;
   width: 40px;
   height: 100%;
@@ -479,18 +528,23 @@ dialog input:focus {
   white-space: nowrap;
   line-height: 2.5;
   border-radius: 5px;
+  transition: all .2s;
+}
+.add-permission:hover{
+  background-color: #ffffff0d;
 }
 
 .table-wrapper {
-  width: var(--table-wrapper-width);
-  height: auto;
   max-height: 400px;
   overflow: auto;
+  min-height: 400px;
+  margin-right: 40px;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  min-height: 390px;
 }
 
 td,
@@ -504,9 +558,6 @@ td.mark {
 
 input.add-role {
   width: var(--table-wrapper-width);
-  float: left;
-  position: sticky;
-  left: 0;
   text-align: center;
   background-color: #242424;
   border: 1px solid white;
@@ -515,9 +566,13 @@ input.add-role {
   padding: 10px 40px;
   font-size: 16px;
   border-radius: 5px;
+  transition: all .2s;
+}
+input.add-role:hover{
+  background-color: #ffffff0d;
 }
 
-input::placeholder {
+input.add-role::placeholder {
   color: white;
 }
 
@@ -531,11 +586,39 @@ img {
   top: 0;
   right: 0;
   cursor: pointer;
+  transition: all .2s;
+}
+
+img:active {
+  transform: scale(90%);
 }
 
 input[type=checkbox] {
+  display: none;
+}
+
+input[type=checkbox]+label {
   cursor: pointer;
 }
+
+label:before {
+  content: '';
+  background: white;
+  border-radius: 5px;
+  display: inline-block;
+  height: 16px;
+  width: 16px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+input[type=checkbox]:checked+label:before {
+  content: '✔';
+  font-size: 12px;
+  font-weight: bolder;
+  color: #242424;
+}
+
 
 #cell-invisible {
   border: none;
@@ -550,7 +633,8 @@ input[type=checkbox] {
   position: sticky;
   top: 41.6px;
   left: 0;
-  z-index: 2;
+  z-index: 3;
+  width: 100px;
 }
 
 .role-col {
@@ -561,23 +645,37 @@ input[type=checkbox] {
 }
 
 .entity-head {
-  position: sticky;
-  top: 0;
-  left: 100px;
-  z-index: 2;
+  position: relative;
 }
 
 .permission-head {
   position: sticky;
   top: 41.6px;
-  z-index: 1;
 }
 
-.min-w {
+.size-cell {
   min-width: 100px;
+  max-width: 100px;
+  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.size-cell-container {
+  display: flex;
+  justify-content: center;
 }
 
 .mark {
   filter: brightness(100);
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+#empty-entity{
+  background: #242424;
 }
 </style>

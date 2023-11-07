@@ -11,15 +11,20 @@
 }
 
 body {
-  display: flex;
-  place-items: center;
+  /* display: flex;
+  justify-content: center;
+  align-items: center;
   min-width: 320px;
   min-height: 100vh;
+  color: white; */
   color: white;
 }
 
 #app {
-  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
   padding: 2rem;
   text-align: center;
 }
