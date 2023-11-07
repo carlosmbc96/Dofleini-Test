@@ -514,7 +514,7 @@ dialog input:focus {
 }
 
 .add-permission {
-  border: 1px solid white;
+  border: 1px solid #4f2d80;
   position: absolute;
   top: 0;
   right: 0;
@@ -531,7 +531,7 @@ dialog input:focus {
 }
 
 .add-permission:hover {
-  background-color: #ffffff0d;
+  background-color: #502d8021;
 }
 
 .table-wrapper {
@@ -556,7 +556,7 @@ input.add-role {
   width: var(--table-wrapper-width);
   text-align: center;
   background-color: #242424;
-  border: 1px solid white;
+  border: 1px solid #4f2d80;
   outline: none;
   color: white;
   padding: 10px 40px 10px 10px;
@@ -566,7 +566,7 @@ input.add-role {
 }
 
 input.add-role:hover {
-  background-color: #ffffff0d;
+  background-color: #502d8021;
 }
 
 input.add-role::placeholder {
