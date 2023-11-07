@@ -323,10 +323,10 @@ const showModal = () => modal.value.showModal()
             <template v-for="entity in permissionsByEntity" :key="entity[0][0]">
               <template v-if="entity[1].length !== 0">
                 <template v-for="permission in entity[1]" :key="permission">
-                <td class="mark">
-                  {{ havePermission(role.permissions, `${entity[0][0]}:${permission}`) }}
-                </td>
-              </template>
+                  <td class="mark">
+                    {{ havePermission(role.permissions, `${entity[0][0]}:${permission}`) }}
+                  </td>
+                </template>
               </template>
               <td v-else></td>
             </template>
@@ -369,7 +369,6 @@ const showModal = () => modal.value.showModal()
 </template>
 
 <style scoped>
-
 .add-role-wrapper {
   position: relative;
   display: flex;
@@ -380,7 +379,7 @@ const showModal = () => modal.value.showModal()
 .add-role-wrapper button {
   position: absolute;
   right: 7px;
-  background-color: #4f2d80;
+  background: transparent linear-gradient(171deg, #4f2d80, #351c58) 0 0 no-repeat;
   border: none;
   padding: 3px 8px;
   border-radius: 5px;
@@ -458,7 +457,7 @@ dialog div {
 }
 
 .btn-save:active {
-  transform: scale(90%);
+  transform: scale(95%);
 }
 
 dialog::backdrop {
@@ -530,7 +529,8 @@ dialog input:focus {
   border-radius: 5px;
   transition: all .2s;
 }
-.add-permission:hover{
+
+.add-permission:hover {
   background-color: #ffffff0d;
 }
 
@@ -552,10 +552,6 @@ th {
   padding: 10px;
 }
 
-td.mark {
-  /* border: 1px solid white; */
-}
-
 input.add-role {
   width: var(--table-wrapper-width);
   text-align: center;
@@ -563,12 +559,13 @@ input.add-role {
   border: 1px solid white;
   outline: none;
   color: white;
-  padding: 10px 40px;
+  padding: 10px 40px 10px 10px;
   font-size: 16px;
   border-radius: 5px;
   transition: all .2s;
 }
-input.add-role:hover{
+
+input.add-role:hover {
   background-color: #ffffff0d;
 }
 
@@ -675,7 +672,8 @@ thead {
   top: 0;
   z-index: 2;
 }
-#empty-entity{
+
+#empty-entity {
   background: #242424;
 }
 </style>

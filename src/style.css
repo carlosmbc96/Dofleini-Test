@@ -11,12 +11,6 @@
 }
 
 body {
-  /* display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-  color: white; */
   color: white;
 }
 
@@ -25,7 +19,7 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
 }
 
@@ -59,4 +53,10 @@ body {
 
 *::-webkit-scrollbar-corner {
   background: #242424;
+}
+
+@media screen and (orientation: landscape) {
+  #app {
+    height: auto;
+  }
 }
