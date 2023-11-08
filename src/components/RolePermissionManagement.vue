@@ -1,5 +1,7 @@
 <script setup>
 import { reactive, ref } from 'vue';
+import { createRole, updateRole, removeRole } from '../endpoints'
+import Spinner from './Spinner.vue'
 
 const props = defineProps({
   roles: Array,
@@ -13,6 +15,7 @@ const newRoleName = ref('')
 const newPermission = ref('')
 const newPermissionIsCorrect = ref(false)
 const modal = ref(null)
+const loading = ref(false)
 
 const setHover = cell => {
   hover.value = cell
@@ -67,11 +70,19 @@ const setPermissionsByPermission = (handlePermission) => {
   }
 }
 
-const deleteRole = idToDelete => {
+const deleteRole = async idToDelete => {
+  loading.value = true
   const indexToDelete = roles.findIndex((role) => role.id === idToDelete);
 
   if (indexToDelete !== -1) {
-    roles.splice(indexToDelete, 1);
+    try {
+      const response = await removeRole(indexToDelete)
+      roles.splice(response, 1);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      loading.value = false
+    }
   }
 }
 
@@ -161,15 +172,23 @@ const modifyText = text => {
   return firstWord;
 }
 
-const addRole = () => {
+const addRole = async () => {
+  loading.value = true
   if (validateNewRole()) {
-    roles.push({
+    const newRole = {
       id: Date.now().toString(),
       name: newRoleName.value.trim(),
       permissions: addReadPermission()
-    })
-    newRoleName.value = ''
-
+    }
+    try {
+      const response = await createRole(newRole)
+      roles.push(response)
+    } catch (error) {
+      console.log(error);
+    } finally {
+      newRoleName.value = ''
+      loading.value = false
+    }
   }
 }
 
@@ -231,8 +250,23 @@ const closeModal = () => {
   newPermissionIsCorrect.value = false
 }
 
-const returnRolesUpdated = () => {
-  console.log(roles);
+const returnRolesUpdated = async () => {
+  loading.value = true
+  try {
+    const response = await updateRole(roles)
+    const blob = new Blob([JSON.stringify(response)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = 'updated role list.json';
+    downloadLink.click();
+    // Liberar la URL de objeto cuando ya no la necesites
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.log(error);
+  } finally {
+    loading.value = false
+  }
 }
 
 const entityHavePermissions = entity => {
@@ -366,9 +400,26 @@ const showModal = () => modal.value.showModal()
     </div>
   </dialog>
   <!-- MODAL -->
+
+  <!-- LOADER -->
+  <div class="spinner-container" v-show="loading">
+    <Spinner />
+  </div>
+  <!-- LOADER -->
 </template>
 
 <style scoped>
+.spinner-container {
+  background-color: #0000006c;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  position: absolute;
+}
+
 .add-role-wrapper {
   position: relative;
   display: flex;
