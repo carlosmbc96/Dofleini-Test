@@ -16,6 +16,14 @@ const newPermission = ref('')
 const newPermissionIsCorrect = ref(false)
 const modal = ref(null)
 const loading = ref(false)
+const errorPermission = reactive({
+  text: '',
+  visible: false
+})
+const errorRole = reactive({
+  text: '',
+  visible: false
+})
 
 const setHover = cell => {
   hover.value = cell
@@ -198,7 +206,14 @@ const validateNewRole = () => {
   if (roles.every(role => role.name !== newRoleNameWithoutSpace)) {
     if (/^[a-zA-Z ]+$/.test(newRoleNameWithoutSpace) && newRoleNameWithoutSpace.length < 20) {
       validated = true
+      errorRole.visible = false
+    } else {
+      errorRole.text = 'Incorrect format, only letters'
+      errorRole.visible = true
     }
+  } else {
+    errorRole.text = 'That role already exists'
+    errorRole.visible = true
   }
   return validated
 }
@@ -238,8 +253,11 @@ const validateNewPermission = () => {
   const regex = /^[A-Z]+(_[A-Z]+)?:[A-Z]+(_[A-Z]+)?$/;
   if (regex.test(newPermission.value) && newPermission.value.length < 30) {
     newPermissionIsCorrect.value = true;
+    errorPermission.visible = false
   } else {
     newPermissionIsCorrect.value = false;
+    errorPermission.text = 'Incorrect format'
+    errorPermission.visible = true
   }
 }
 
@@ -247,6 +265,8 @@ const closeModal = () => {
   modal.value.close()
   showModal.value = false
   newPermission.value = ''
+  errorPermission.text = ''
+  errorPermission.visible = false
   newPermissionIsCorrect.value = false
 }
 
@@ -375,7 +395,10 @@ const showModal = () => modal.value.showModal()
     </div>
     <!-- INPUT ADD ROLE -->
     <div class="add-role-wrapper">
-      <input class="add-role" type="text" placeholder="+ Add Role" v-model="newRoleName" @keyup.enter="addRole">
+      <input class="add-role" type="text" placeholder="+ Add Role" v-model="newRoleName" @input="validateNewRole"
+        @keyup.enter="addRole">
+      <span class="error error-role" :class="{ 'error-visible': errorRole.visible, 'error-no-visible': !errorRole.visible }">{{
+        errorRole.text }}</span>
       <button @click="addRole" :style="{ cursor: !validateNewRole() ? 'not-allowed' : 'pointer' }"
         :disabled="!validateNewRole()">+</button>
     </div>
@@ -393,8 +416,13 @@ const showModal = () => modal.value.showModal()
   <!-- MODAL -->
   <dialog ref="modal">
     <button class="btn-close-modal" @click="closeModal">✖️</button>
-    <div>
-      <input placeholder="ENTITY:ACTION" type="text" v-model="newPermission" @input="validateNewPermission">
+    <div class="dialog-container">
+      <div class="validate-permission">
+        <input placeholder="ENTITY:ACTION" type="text" v-model="newPermission" @input="validateNewPermission">
+        <span class="error error-permission"
+          :class="{ 'error-visible': errorPermission.visible, 'error-no-visible': !errorPermission.visible }">{{
+            errorPermission.text }}</span>
+      </div>
       <button :style="{ cursor: !newPermissionIsCorrect ? 'not-allowed' : 'pointer' }" class="btn-ok"
         @click="addPermission" :disabled="!newPermissionIsCorrect">Ok</button>
     </div>
@@ -409,6 +437,39 @@ const showModal = () => modal.value.showModal()
 </template>
 
 <style scoped>
+.validate-permission {
+  width: 100%;
+  position: relative;
+}
+
+.error {
+  position: absolute;
+  color: red;
+  bottom: 0;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: -1;
+  transition: all .2s;
+}
+
+.error-permission {
+  left: 0;
+}
+
+.error-role {
+  left: 0%;
+  right: 0%;
+}
+
+.error-visible {
+  transform: translateY(20px);
+}
+
+.error-no-visible {
+  transform: translateY(0px);
+  color: transparent;
+}
+
 .spinner-container {
   background-color: #0000006c;
   width: 100%;
@@ -456,7 +517,7 @@ tr:hover {
   background: transparent linear-gradient(171deg, #4f2d80, #351c58) 0 0 no-repeat;
 }
 
-dialog div {
+dialog div.dialog-container {
   width: 100%;
   position: relative;
   display: flex;
